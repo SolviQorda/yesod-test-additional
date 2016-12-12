@@ -102,6 +102,8 @@ module Yesod.Test.Stateful
 
     -- * Grab information
     , getTestYesod
+    , getContext
+    , modifyContext
     , getResponse
     , getRequestCookies
 
@@ -151,17 +153,18 @@ import Data.Monoid (mempty)
 -- | The state used in a single test case defined using 'yit'
 --
 -- @since 0.1.0
-data YesodExampleData site = YesodExampleData
+data YesodExampleData site ctx = YesodExampleData
   { yedApp :: !Application
   , yedSite :: !site
   , yedCookies :: !Cookies
   , yedResponse :: !(Maybe SResponse)
+  , yedContext :: ctx
   }
 
 -- | A single test case, to be run with 'yit'.
 --
 -- @since 0.1.0
-type YesodExample site = ST.StateT (YesodExampleData site) IO
+type YesodExample site ctx = ST.StateT (YesodExampleData site ctx) IO
 
 -- | Mapping from cookie name to value.
 --
@@ -171,25 +174,38 @@ type Cookies = M.Map ByteString Cookie.SetCookie
 -- | Corresponds to hspec\'s 'Spec'.
 --
 -- @since 0.1.0
-type YesodSpec site = Writer [YesodSpecTree site] ()
+type YesodSpec site ctx = Writer [YesodSpecTree site ctx] ()
 
 -- | Internal data structure, corresponding to hspec\'s 'YesodSpecTree'.
 --
 -- @since 0.1.0
-data YesodSpecTree site
-  = YesodSpecGroup String [YesodSpecTree site]
-  | YesodSpecItem String (YesodExample site ())
+data YesodSpecTree site ctx
+  = YesodSpecGroup String [YesodSpecTree site ctx]
+  | YesodSpecItem String (YesodExample site ctx ())
 
 -- | Get the foundation value used for the current test.
 --
 -- @since 0.1.0
-getTestYesod :: YesodExample site site
+getTestYesod :: YesodExample site ctx site
 getTestYesod = fmap yedSite ST.get
+
+-- | Get the test context for the current test.
+--
+-- @since 0.1.0
+getContext :: YesodExample site ctx ctx
+getContext = yedContext <$> ST.get
+
+-- | Modify the text context for the current test.
+--
+-- @since 0.1.0
+modifyContext :: (ctx -> ctx) -> YesodExample site ctx ()
+modifyContext f = ST.get >>= ST.put . modify
+  where modify y = y { yedContext = f $ yedContext y }
 
 -- | Get the most recently provided response value, if available.
 --
 -- @since 0.1.0
-getResponse :: YesodExample site (Maybe SResponse)
+getResponse :: YesodExample site ctx (Maybe SResponse)
 getResponse = fmap yedResponse ST.get
 
 data RequestBuilderData site = RequestBuilderData
@@ -217,14 +233,15 @@ type RequestBuilder site = ST.StateT (RequestBuilderData site) IO
 
 -- | Start describing a Tests suite keeping cookies and a reference to the tested 'Application'
 -- and 'ConnectionPool'
-ydescribe :: String -> YesodSpec site -> YesodSpec site
+ydescribe :: String -> YesodSpec site ctx -> YesodSpec site ctx
 ydescribe label yspecs = tell [YesodSpecGroup label $ execWriter yspecs]
 
 yesodSpec :: YesodDispatch site
           => site
-          -> YesodSpec site
+          -> ctx
+          -> YesodSpec site ctx
           -> Hspec.Spec
-yesodSpec site yspecs =
+yesodSpec site ctx yspecs =
   Hspec.fromSpecList $ map unYesod $ execWriter yspecs
   where
     unYesod (YesodSpecGroup x y) = Hspec.specGroup x $ map unYesod y
@@ -235,15 +252,17 @@ yesodSpec site yspecs =
         , yedSite = site
         , yedCookies = M.empty
         , yedResponse = Nothing
+        , yedContext = ctx
         }
 
 -- | Same as yesodSpec, but instead of taking already built site it
 -- takes an action which produces site for each test.
 yesodSpecWithSiteGenerator :: YesodDispatch site
                            => IO site
-                           -> YesodSpec site
+                           -> ctx
+                           -> YesodSpec site ctx
                            -> Hspec.Spec
-yesodSpecWithSiteGenerator getSiteAction yspecs =
+yesodSpecWithSiteGenerator getSiteAction ctx yspecs =
   Hspec.fromSpecList $ map (unYesod getSiteAction) $ execWriter yspecs
   where
     unYesod getSiteAction' (YesodSpecGroup x y) = Hspec.specGroup x $ map (unYesod getSiteAction') y
@@ -255,6 +274,7 @@ yesodSpecWithSiteGenerator getSiteAction yspecs =
         , yedSite = site
         , yedCookies = M.empty
         , yedResponse = Nothing
+        , yedContext = ctx
         }
 
 -- | Same as yesodSpec, but instead of taking a site it
@@ -262,10 +282,11 @@ yesodSpecWithSiteGenerator getSiteAction yspecs =
 -- This lets you use your middleware from makeApplication
 yesodSpecApp :: YesodDispatch site
              => site
+             -> ctx
              -> IO Application
-             -> YesodSpec site
+             -> YesodSpec site ctx
              -> Hspec.Spec
-yesodSpecApp site getApp yspecs =
+yesodSpecApp site ctx getApp yspecs =
   Hspec.fromSpecList $ map unYesod $ execWriter yspecs
   where
     unYesod (YesodSpecGroup x y) = Hspec.specGroup x $ map unYesod y
@@ -276,10 +297,11 @@ yesodSpecApp site getApp yspecs =
         , yedSite = site
         , yedCookies = M.empty
         , yedResponse = Nothing
+        , yedContext = ctx
         }
 
 -- | Describe a single test that keeps cookies, and a reference to the last response.
-yit :: String -> YesodExample site () -> YesodSpec site
+yit :: String -> YesodExample site ctx () -> YesodSpec site ctx
 yit label example = tell [YesodSpecItem label example]
 
 -- Performs a given action using the last response. Use this to create
@@ -299,7 +321,7 @@ withResponse' getter errTrace f = maybe err f . getter =<< ST.get
 
 -- | Performs a given action using the last response. Use this to create
 -- response-level assertions
-withResponse :: (SResponse -> YesodExample site a) -> YesodExample site a
+withResponse :: (SResponse -> YesodExample site ctx a) -> YesodExample site ctx a
 withResponse = withResponse' yedResponse []
 
 -- | Use HXT to parse a value from an HTML tag.
@@ -319,7 +341,7 @@ htmlQuery' getter errTrace query = withResponse' getter ("Tried to invoke htmlQu
     Right matches -> return $ map (encodeUtf8 . TL.pack) matches
 
 -- | Query the last response using CSS selectors, returns a list of matched fragments
-htmlQuery :: Query -> YesodExample site [HtmlLBS]
+htmlQuery :: Query -> YesodExample site ctx [HtmlLBS]
 htmlQuery = htmlQuery' yedResponse []
 
 -- | Asserts that the two given values are equal.
@@ -327,7 +349,7 @@ htmlQuery = htmlQuery' yedResponse []
 -- In case they are not equal, error mesasge includes the two values.
 --
 -- @since 0.1.0
-assertEq :: (Eq a, Show a) => String -> a -> a -> YesodExample site ()
+assertEq :: (Eq a, Show a) => String -> a -> a -> YesodExample site ctx ()
 assertEq m a b =
   liftIO $ HUnit.assertBool msg (a == b)
   where msg = "Assertion: " ++ m ++ "\n" ++
@@ -335,17 +357,17 @@ assertEq m a b =
               "Second argument: " ++ ppShow b ++ "\n"
 
 {-# DEPRECATED assertEqual "Use assertEq instead" #-}
-assertEqual :: (Eq a) => String -> a -> a -> YesodExample site ()
+assertEqual :: (Eq a) => String -> a -> a -> YesodExample site ctx ()
 assertEqual = assertEqualNoShow
 
 -- | Asserts that the two given values are equal.
 --
 -- @since 0.1.0
-assertEqualNoShow :: (Eq a) => String -> a -> a -> YesodExample site ()
+assertEqualNoShow :: (Eq a) => String -> a -> a -> YesodExample site ctx ()
 assertEqualNoShow msg a b = liftIO $ HUnit.assertBool msg (a == b)
 
 -- | Assert the last response status is as expected.
-statusIs :: Int -> YesodExample site ()
+statusIs :: Int -> YesodExample site ctx ()
 statusIs number = withResponse $ \ SResponse { simpleStatus = s } ->
   liftIO $ flip HUnit.assertBool (H.statusCode s == number) $ concat
     [ "Expected status was ", show number
@@ -353,7 +375,7 @@ statusIs number = withResponse $ \ SResponse { simpleStatus = s } ->
     ]
 
 -- | Assert the given header key/value pair was returned.
-assertHeader :: CI BS8.ByteString -> BS8.ByteString -> YesodExample site ()
+assertHeader :: CI BS8.ByteString -> BS8.ByteString -> YesodExample site ctx ()
 assertHeader header value = withResponse $ \ SResponse { simpleHeaders = h } ->
   case lookup header h of
     Nothing -> failure $ T.pack $ concat
@@ -373,7 +395,7 @@ assertHeader header value = withResponse $ \ SResponse { simpleHeaders = h } ->
       ]
 
 -- | Assert the given header was not included in the response.
-assertNoHeader :: CI BS8.ByteString -> YesodExample site ()
+assertNoHeader :: CI BS8.ByteString -> YesodExample site ctx ()
 assertNoHeader header = withResponse $ \ SResponse { simpleHeaders = h } ->
   case lookup header h of
     Nothing -> return ()
@@ -386,14 +408,14 @@ assertNoHeader header = withResponse $ \ SResponse { simpleHeaders = h } ->
 
 -- | Assert the last response is exactly equal to the given text. This is
 -- useful for testing API responses.
-bodyEquals :: String -> YesodExample site ()
+bodyEquals :: String -> YesodExample site ctx ()
 bodyEquals text = withResponse $ \ res ->
   liftIO $ HUnit.assertBool ("Expected body to equal " ++ text) $
     (simpleBody res) == encodeUtf8 (TL.pack text)
 
 -- | Assert the last response has the given text. The check is performed using the response
 -- body in full text form.
-bodyContains :: String -> YesodExample site ()
+bodyContains :: String -> YesodExample site ctx ()
 bodyContains text = withResponse $ \ res ->
   liftIO $ HUnit.assertBool ("Expected body to contain " ++ text) $
     (simpleBody res) `contains` text
@@ -402,7 +424,7 @@ bodyContains text = withResponse $ \ res ->
 -- body in full text form.
 -- @since 0.1.0
 -- @since 1.5.3
-bodyNotContains :: String -> YesodExample site ()
+bodyNotContains :: String -> YesodExample site ctx ()
 bodyNotContains text = withResponse $ \ res ->
   liftIO $ HUnit.assertBool ("Expected body not to contain " ++ text) $
     not $ contains (simpleBody res) text
@@ -412,7 +434,7 @@ contains a b = DL.isInfixOf b (TL.unpack $ decodeUtf8 a)
 
 -- | Queries the HTML using a CSS selector, and all matched elements must contain
 -- the given string.
-htmlAllContain :: Query -> String -> YesodExample site ()
+htmlAllContain :: Query -> String -> YesodExample site ctx ()
 htmlAllContain query search = do
   matches <- htmlQuery query
   case matches of
@@ -425,7 +447,7 @@ htmlAllContain query search = do
 --
 -- @since 0.1.0
 -- Since 0.3.5
-htmlAnyContain :: Query -> String -> YesodExample site ()
+htmlAnyContain :: Query -> String -> YesodExample site ctx ()
 htmlAnyContain query search = do
   matches <- htmlQuery query
   case matches of
@@ -439,7 +461,7 @@ htmlAnyContain query search = do
 --
 -- @since 0.1.0
 -- Since 1.2.2
-htmlNoneContain :: Query -> String -> YesodExample site ()
+htmlNoneContain :: Query -> String -> YesodExample site ctx ()
 htmlNoneContain query search = do
   matches <- htmlQuery query
   case DL.filter (DL.isInfixOf search) (map (TL.unpack . decodeUtf8) matches) of
@@ -449,19 +471,19 @@ htmlNoneContain query search = do
 
 -- | Performs a CSS query on the last response and asserts the matched elements
 -- are as many as expected.
-htmlCount :: Query -> Int -> YesodExample site ()
+htmlCount :: Query -> Int -> YesodExample site ctx ()
 htmlCount query count = do
   matches <- fmap DL.length $ htmlQuery query
   liftIO $ flip HUnit.assertBool (matches == count)
     ("Expected "++(show count)++" elements to match "++T.unpack query++", found "++(show matches))
 
 -- | Outputs the last response body to stderr (So it doesn't get captured by HSpec)
-printBody :: YesodExample site ()
+printBody :: YesodExample site ctx ()
 printBody = withResponse $ \ SResponse { simpleBody = b } ->
   liftIO $ BSL8.hPutStrLn stderr b
 
 -- | Performs a CSS query and print the matches to stderr.
-printMatches :: Query -> YesodExample site ()
+printMatches :: Query -> YesodExample site ctx ()
 printMatches query = do
   matches <- htmlQuery query
   liftIO $ hPutStrLn stderr $ show matches
@@ -691,7 +713,7 @@ getRequestCookies = do
 -- > post HomeR
 post :: (Yesod site, RedirectUrl site url)
      => url
-     -> YesodExample site ()
+     -> YesodExample site ctx ()
 post url = request $ do
   setMethod "POST"
   setUrl url
@@ -707,7 +729,7 @@ post url = request $ do
 postBody :: (Yesod site, RedirectUrl site url)
          => url
          -> BSL8.ByteString
-         -> YesodExample site ()
+         -> YesodExample site ctx ()
 postBody url body = request $ do
   setMethod "POST"
   setUrl url
@@ -722,7 +744,7 @@ postBody url body = request $ do
 -- > get ("http://google.com" :: Text)
 get :: (Yesod site, RedirectUrl site url)
     => url
-    -> YesodExample site ()
+    -> YesodExample site ctx ()
 get url = request $ do
   setMethod "GET"
   setUrl url
@@ -736,7 +758,7 @@ get url = request $ do
 -- > get HomeR
 -- > followRedirect
 followRedirect :: Yesod site
-               =>  YesodExample site (Either T.Text T.Text) -- ^ 'Left' with an error message if not a redirect, 'Right' with the redirected URL if it was
+               =>  YesodExample site ctx (Either T.Text T.Text) -- ^ 'Left' with an error message if not a redirect, 'Right' with the redirected URL if it was
 followRedirect = do
   mr <- getResponse
   case mr of
@@ -758,7 +780,7 @@ followRedirect = do
 --
 -- @since 0.1.0
 getLocation :: (Yesod site, ParseRoute site)
-            => YesodExample site (Either T.Text (Route site))
+            => YesodExample site ctx (Either T.Text (Route site))
 getLocation = do
   mr <- getResponse
   case mr of
@@ -858,9 +880,9 @@ addRequestHeader header = ST.modify $ \rbd -> rbd
 -- >   setUrl NameR
 request :: Yesod site
         => RequestBuilder site ()
-        -> YesodExample site ()
+        -> YesodExample site ctx ()
 request reqBuilder = do
-  YesodExampleData app site oldCookies mRes <- ST.get
+  YesodExampleData app site oldCookies mRes ctx <- ST.get
 
   RequestBuilderData {..} <- liftIO $ ST.execStateT reqBuilder RequestBuilderData
     { rbdPostData = MultipleItemsPostData []
@@ -902,7 +924,7 @@ request reqBuilder = do
                                    }) app
   let newCookies = parseSetCookies $ simpleHeaders response
       cookies' = M.fromList [(Cookie.setCookieName c, c) | c <- newCookies] `M.union` cookies
-  ST.put $ YesodExampleData app site cookies' (Just response)
+  ST.put $ YesodExampleData app site cookies' (Just response) ctx
   where
     isFile (ReqFilePart _ _ _ _) = True
     isFile _ = False
@@ -1001,23 +1023,24 @@ parseSetCookies headers = map (Cookie.parseSetCookie . snd) $ DL.filter (("Set-C
 failure :: (MonadIO a) => T.Text -> a b
 failure reason = (liftIO $ HUnit.assertFailure $ T.unpack reason) >> error ""
 
-type TestApp site = (site, Middleware)
-testApp :: site -> Middleware -> TestApp site
-testApp site middleware = (site, middleware)
-type YSpec site = Hspec.SpecWith (TestApp site)
+type TestApp site ctx = (site, Middleware, ctx)
+testApp :: site -> Middleware -> ctx -> TestApp site ctx
+testApp site middleware ctx = (site, middleware, ctx)
+type YSpec site ctx = Hspec.SpecWith (TestApp site ctx)
 
-instance YesodDispatch site => Hspec.Example (ST.StateT (YesodExampleData site) IO a) where
-  type Arg (ST.StateT (YesodExampleData site) IO a) = TestApp site
+instance YesodDispatch site => Hspec.Example (ST.StateT (YesodExampleData site ctx) IO a) where
+  type Arg (ST.StateT (YesodExampleData site ctx) IO a) = TestApp site ctx
 
   evaluateExample example params action =
     Hspec.evaluateExample
-    (action $ \(site, middleware) -> do
+    (action $ \(site, middleware, ctx) -> do
         app <- toWaiAppPlain site
         _ <- ST.evalStateT example YesodExampleData
           { yedApp = middleware app
           , yedSite = site
           , yedCookies = M.empty
           , yedResponse = Nothing
+          , yedContext = ctx
           }
         return ())
     params
