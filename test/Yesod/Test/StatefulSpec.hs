@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Yesod.Test.StatefulTest (test) where
+module Yesod.Test.StatefulSpec (spec) where
 
 import Test.HUnit hiding (Test)
 import Test.Hspec
@@ -43,8 +43,8 @@ mkYesod "RoutedApp" [parseRoutes|
 /resources/#Text ResourceR  GET
 |]
 
-main :: IO ()
-main = hspec $ do
+spec :: Spec
+spec = do
     describe "CSS selector parsing" $ do
         it "elements" $ parseQuery_ "strong" @?= [[DeepChildren [ByTagName "strong"]]]
         it "child elements" $ parseQuery_ "strong > i" @?= [[DeepChildren [ByTagName "strong"], DirectChildren [ByTagName "i"]]]
@@ -139,7 +139,7 @@ main = hspec $ do
                     setMethod "POST"
                     setUrl ("/form" :: Text)
                     byLabel "Some Label" "12345"
-                    fileByLabel "Some File" "test/main.hs" "text/plain"
+                    fileByLabel "Some File" "test/Spec.hs" "text/plain"
                     addToken
                 statusIs 200
                 bodyEquals "12345"
@@ -159,7 +159,7 @@ main = hspec $ do
                     setMethod "POST"
                     setUrl ("/form" :: Text)
                     byLabel "Some Label" "12345"
-                    fileByLabel "Some File" "test/main.hs" "text/plain"
+                    fileByLabel "Some File" "test/Spec.hs" "text/plain"
                     addToken_ "body"
                 statusIs 200
                 bodyEquals "12345"

@@ -56,10 +56,24 @@ test-suite test
   ghc-options:          -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:        base
                       , yesod-test-stateful
+                      , bytestring
+                      , containers
+                      , hspec
+                      , html-conduit
+                      , http-types
+                      , HUnit
+                      , lifted-base
                       , tasty
                       , tasty-hspec
+                      , text
+                      , xml-conduit
+                      , wai
+                      , yesod-core
+                      , yesod-form
+                      , yesod-test
   hs-source-dirs:       test
-  main-is:              Main.hs
+  main-is:              Spec.hs
+  other-modules:        Yesod.Test.StatefulSpec
 
 source-repository head
   type: git
