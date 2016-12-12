@@ -150,7 +150,7 @@ import Data.Monoid (mempty)
 
 -- | The state used in a single test case defined using 'yit'
 --
--- Since 1.2.4
+-- @since 0.1.0
 data YesodExampleData site = YesodExampleData
     { yedApp :: !Application
     , yedSite :: !site
@@ -160,35 +160,35 @@ data YesodExampleData site = YesodExampleData
 
 -- | A single test case, to be run with 'yit'.
 --
--- Since 1.2.0
+-- @since 0.1.0
 type YesodExample site = ST.StateT (YesodExampleData site) IO
 
 -- | Mapping from cookie name to value.
 --
--- Since 1.2.0
+-- @since 0.1.0
 type Cookies = M.Map ByteString Cookie.SetCookie
 
 -- | Corresponds to hspec\'s 'Spec'.
 --
--- Since 1.2.0
+-- @since 0.1.0
 type YesodSpec site = Writer [YesodSpecTree site] ()
 
 -- | Internal data structure, corresponding to hspec\'s 'YesodSpecTree'.
 --
--- Since 1.2.0
+-- @since 0.1.0
 data YesodSpecTree site
     = YesodSpecGroup String [YesodSpecTree site]
     | YesodSpecItem String (YesodExample site ())
 
 -- | Get the foundation value used for the current test.
 --
--- Since 1.2.0
+-- @since 0.1.0
 getTestYesod :: YesodExample site site
 getTestYesod = fmap yedSite ST.get
 
 -- | Get the most recently provided response value, if available.
 --
--- Since 1.2.0
+-- @since 0.1.0
 getResponse :: YesodExample site (Maybe SResponse)
 getResponse = fmap yedResponse ST.get
 
@@ -326,7 +326,7 @@ htmlQuery = htmlQuery' yedResponse []
 --
 -- In case they are not equal, error mesasge includes the two values.
 --
--- @since 1.5.2
+-- @since 0.1.0
 assertEq :: (Eq a, Show a) => String -> a -> a -> YesodExample site ()
 assertEq m a b =
   liftIO $ HUnit.assertBool msg (a == b)
@@ -340,7 +340,7 @@ assertEqual = assertEqualNoShow
 
 -- | Asserts that the two given values are equal.
 --
--- @since 1.5.2
+-- @since 0.1.0
 assertEqualNoShow :: (Eq a) => String -> a -> a -> YesodExample site ()
 assertEqualNoShow msg a b = liftIO $ HUnit.assertBool msg (a == b)
 
@@ -400,6 +400,7 @@ bodyContains text = withResponse $ \ res ->
 
 -- | Assert the last response doesn't have the given text. The check is performed using the response
 -- body in full text form.
+-- @since 0.1.0
 -- @since 1.5.3
 bodyNotContains :: String -> YesodExample site ()
 bodyNotContains text = withResponse $ \ res ->
@@ -422,6 +423,7 @@ htmlAllContain query search = do
 -- | Queries the HTML using a CSS selector, and passes if any matched
 -- element contains the given string.
 --
+-- @since 0.1.0
 -- Since 0.3.5
 htmlAnyContain :: Query -> String -> YesodExample site ()
 htmlAnyContain query search = do
@@ -435,6 +437,7 @@ htmlAnyContain query search = do
 -- element contains the given string (in other words, it is the logical
 -- inverse of htmlAnyContains).
 --
+-- @since 0.1.0
 -- Since 1.2.2
 htmlNoneContain :: Query -> String -> YesodExample site ()
 htmlNoneContain query search = do
@@ -635,6 +638,7 @@ addToken = addToken_ ""
 -- > request $ do
 -- >   addTokenFromCookie
 --
+-- @since 0.1.0
 -- Since 1.4.3.2
 addTokenFromCookie :: RequestBuilder site ()
 addTokenFromCookie = addTokenFromCookieNamedToHeaderNamed defaultCsrfCookieName defaultCsrfHeaderName
@@ -651,7 +655,7 @@ addTokenFromCookie = addTokenFromCookieNamedToHeaderNamed defaultCsrfCookieName 
 -- > request $ do
 -- >   addTokenFromCookieNamedToHeaderNamed "cookieName" (CI "headerName")
 --
--- Since 1.4.3.2
+-- @since 0.1.0
 addTokenFromCookieNamedToHeaderNamed :: ByteString -- ^ The name of the cookie
                                      -> CI ByteString -- ^ The name of the header
                                      -> RequestBuilder site ()
@@ -674,7 +678,7 @@ addTokenFromCookieNamedToHeaderNamed cookieName headerName = do
 -- >   cookies <- getRequestCookies
 -- >   liftIO $ putStrLn $ "Cookies are: " ++ show cookies
 --
--- Since 1.4.3.2
+-- @since 0.1.0
 getRequestCookies :: RequestBuilder site Cookies
 getRequestCookies = do
   requestBuilderData <- ST.get
@@ -758,7 +762,7 @@ followRedirect = do
 -- > post ResourcesR
 -- > (Right (ResourceR resourceId)) <- getLocation
 --
--- @since 1.5.4
+-- @since 0.1.0
 getLocation :: (Yesod site, ParseRoute site)
             => YesodExample site (Either T.Text (Route site))
 getLocation = do
