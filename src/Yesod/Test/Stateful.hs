@@ -152,11 +152,11 @@ import Data.Monoid (mempty)
 --
 -- @since 0.1.0
 data YesodExampleData site = YesodExampleData
-    { yedApp :: !Application
-    , yedSite :: !site
-    , yedCookies :: !Cookies
-    , yedResponse :: !(Maybe SResponse)
-    }
+  { yedApp :: !Application
+  , yedSite :: !site
+  , yedCookies :: !Cookies
+  , yedResponse :: !(Maybe SResponse)
+  }
 
 -- | A single test case, to be run with 'yit'.
 --
@@ -177,8 +177,8 @@ type YesodSpec site = Writer [YesodSpecTree site] ()
 --
 -- @since 0.1.0
 data YesodSpecTree site
-    = YesodSpecGroup String [YesodSpecTree site]
-    | YesodSpecItem String (YesodExample site ())
+  = YesodSpecGroup String [YesodSpecTree site]
+  | YesodSpecItem String (YesodExample site ())
 
 -- | Get the foundation value used for the current test.
 --
@@ -193,14 +193,14 @@ getResponse :: YesodExample site (Maybe SResponse)
 getResponse = fmap yedResponse ST.get
 
 data RequestBuilderData site = RequestBuilderData
-    { rbdPostData :: RBDPostData
-    , rbdResponse :: (Maybe SResponse)
-    , rbdMethod :: H.Method
-    , rbdSite :: site
-    , rbdPath :: [T.Text]
-    , rbdGets :: H.Query
-    , rbdHeaders :: H.RequestHeaders
-    }
+  { rbdPostData :: RBDPostData
+  , rbdResponse :: (Maybe SResponse)
+  , rbdMethod :: H.Method
+  , rbdSite :: site
+  , rbdPath :: [T.Text]
+  , rbdGets :: H.Query
+  , rbdHeaders :: H.RequestHeaders
+  }
 
 data RBDPostData = MultipleItemsPostData [RequestPart]
                  | BinaryPostData BSL8.ByteString
@@ -225,17 +225,17 @@ yesodSpec :: YesodDispatch site
           -> YesodSpec site
           -> Hspec.Spec
 yesodSpec site yspecs =
-    Hspec.fromSpecList $ map unYesod $ execWriter yspecs
+  Hspec.fromSpecList $ map unYesod $ execWriter yspecs
   where
     unYesod (YesodSpecGroup x y) = Hspec.specGroup x $ map unYesod y
     unYesod (YesodSpecItem x y) = Hspec.specItem x $ do
-        app <- toWaiAppPlain site
-        ST.evalStateT y YesodExampleData
-            { yedApp = app
-            , yedSite = site
-            , yedCookies = M.empty
-            , yedResponse = Nothing
-            }
+      app <- toWaiAppPlain site
+      ST.evalStateT y YesodExampleData
+        { yedApp = app
+        , yedSite = site
+        , yedCookies = M.empty
+        , yedResponse = Nothing
+        }
 
 -- | Same as yesodSpec, but instead of taking already built site it
 -- takes an action which produces site for each test.
@@ -244,18 +244,18 @@ yesodSpecWithSiteGenerator :: YesodDispatch site
                            -> YesodSpec site
                            -> Hspec.Spec
 yesodSpecWithSiteGenerator getSiteAction yspecs =
-    Hspec.fromSpecList $ map (unYesod getSiteAction) $ execWriter yspecs
-    where
-      unYesod getSiteAction' (YesodSpecGroup x y) = Hspec.specGroup x $ map (unYesod getSiteAction') y
-      unYesod getSiteAction' (YesodSpecItem x y) = Hspec.specItem x $ do
-        site <- getSiteAction'
-        app <- toWaiAppPlain site
-        ST.evalStateT y YesodExampleData
-            { yedApp = app
-            , yedSite = site
-            , yedCookies = M.empty
-            , yedResponse = Nothing
-            }
+  Hspec.fromSpecList $ map (unYesod getSiteAction) $ execWriter yspecs
+  where
+    unYesod getSiteAction' (YesodSpecGroup x y) = Hspec.specGroup x $ map (unYesod getSiteAction') y
+    unYesod getSiteAction' (YesodSpecItem x y) = Hspec.specItem x $ do
+      site <- getSiteAction'
+      app <- toWaiAppPlain site
+      ST.evalStateT y YesodExampleData
+        { yedApp = app
+        , yedSite = site
+        , yedCookies = M.empty
+        , yedResponse = Nothing
+        }
 
 -- | Same as yesodSpec, but instead of taking a site it
 -- takes an action which produces the 'Application' for each test.
@@ -266,17 +266,17 @@ yesodSpecApp :: YesodDispatch site
              -> YesodSpec site
              -> Hspec.Spec
 yesodSpecApp site getApp yspecs =
-    Hspec.fromSpecList $ map unYesod $ execWriter yspecs
+  Hspec.fromSpecList $ map unYesod $ execWriter yspecs
   where
     unYesod (YesodSpecGroup x y) = Hspec.specGroup x $ map unYesod y
     unYesod (YesodSpecItem x y) = Hspec.specItem x $ do
-        app <- getApp
-        ST.evalStateT y YesodExampleData
-            { yedApp = app
-            , yedSite = site
-            , yedCookies = M.empty
-            , yedResponse = Nothing
-            }
+      app <- getApp
+      ST.evalStateT y YesodExampleData
+        { yedApp = app
+        , yedSite = site
+        , yedCookies = M.empty
+        , yedResponse = Nothing
+        }
 
 -- | Describe a single test that keeps cookies, and a reference to the last response.
 yit :: String -> YesodExample site () -> YesodSpec site
@@ -357,20 +357,20 @@ assertHeader :: CI BS8.ByteString -> BS8.ByteString -> YesodExample site ()
 assertHeader header value = withResponse $ \ SResponse { simpleHeaders = h } ->
   case lookup header h of
     Nothing -> failure $ T.pack $ concat
-        [ "Expected header "
-        , show header
-        , " to be "
-        , show value
-        , ", but it was not present"
-        ]
+      [ "Expected header "
+      , show header
+      , " to be "
+      , show value
+      , ", but it was not present"
+      ]
     Just value' -> liftIO $ flip HUnit.assertBool (value == value') $ concat
-        [ "Expected header "
-        , show header
-        , " to be "
-        , show value
-        , ", but received "
-        , show value'
-        ]
+      [ "Expected header "
+      , show header
+      , " to be "
+      , show value
+      , ", but received "
+      , show value'
+      ]
 
 -- | Assert the given header was not included in the response.
 assertNoHeader :: CI BS8.ByteString -> YesodExample site ()
@@ -378,11 +378,11 @@ assertNoHeader header = withResponse $ \ SResponse { simpleHeaders = h } ->
   case lookup header h of
     Nothing -> return ()
     Just s  -> failure $ T.pack $ concat
-        [ "Unexpected header "
-        , show header
-        , " containing "
-        , show s
-        ]
+      [ "Unexpected header "
+      , show header
+      , " containing "
+      , show s
+      ]
 
 -- | Assert the last response is exactly equal to the given text. This is
 -- useful for testing API responses.
@@ -445,7 +445,7 @@ htmlNoneContain query search = do
   case DL.filter (DL.isInfixOf search) (map (TL.unpack . decodeUtf8) matches) of
     [] -> return ()
     found -> failure $ "Found " <> T.pack (show $ length found) <>
-                " instances of " <> T.pack search <> " in " <> query <> " elements"
+             " instances of " <> T.pack search <> " in " <> query <> " elements"
 
 -- | Performs a CSS query on the last response and asserts the matched elements
 -- are as many as expected.
@@ -477,9 +477,9 @@ addPostParam name value =
 -- | Add a parameter with the given name and value to the query string.
 addGetParam :: T.Text -> T.Text -> RequestBuilder site ()
 addGetParam name value = ST.modify $ \rbd -> rbd
-    { rbdGets = (TE.encodeUtf8 name, Just $ TE.encodeUtf8 value)
+  { rbdGets = (TE.encodeUtf8 name, Just $ TE.encodeUtf8 value)
               : rbdGets rbd
-    }
+  }
 
 -- | Add a file to be posted with the current request.
 --
@@ -504,34 +504,31 @@ addFile name path mimetype = do
 nameFromLabel :: T.Text -> RequestBuilder site T.Text
 nameFromLabel label = do
   mres <- fmap rbdResponse ST.get
-  res <-
-    case mres of
-      Nothing -> failure "nameFromLabel: No response available"
-      Just res -> return res
-  let
-    body = simpleBody res
-    mlabel = parseHTML body
-                $// C.element "label"
-                >=> contentContains label
-    mfor = mlabel >>= attribute "for"
-
-    contentContains x c
+  res <- case mres of
+    Nothing -> failure "nameFromLabel: No response available"
+    Just res -> return res
+  let body = simpleBody res
+      mlabel = parseHTML body
+               $// C.element "label"
+               >=> contentContains label
+      mfor = mlabel >>= attribute "for"
+      contentContains x c
         | x `T.isInfixOf` T.concat (c $// content) = [c]
         | otherwise = []
 
   case mfor of
     for:[] -> do
       let mname = parseHTML body
-                    $// attributeIs "id" for
-                    >=> attribute "name"
+                  $// attributeIs "id" for
+                  >=> attribute "name"
       case mname of
         "":_ -> failure $ T.concat
-            [ "Label "
-            , label
-            , " resolved to id "
-            , for
-            , " which was not found. "
-            ]
+          [ "Label "
+          , label
+          , " resolved to id "
+          , for
+          , " which was not found. "
+          ]
         name:_ -> return name
         [] -> failure $ "No input with id " <> for
     [] ->
@@ -639,7 +636,6 @@ addToken = addToken_ ""
 -- >   addTokenFromCookie
 --
 -- @since 0.1.0
--- Since 1.4.3.2
 addTokenFromCookie :: RequestBuilder site ()
 addTokenFromCookie = addTokenFromCookieNamedToHeaderNamed defaultCsrfCookieName defaultCsrfHeaderName
 
@@ -662,13 +658,13 @@ addTokenFromCookieNamedToHeaderNamed :: ByteString -- ^ The name of the cookie
 addTokenFromCookieNamedToHeaderNamed cookieName headerName = do
   cookies <- getRequestCookies
   case M.lookup cookieName cookies of
-        Just csrfCookie -> addRequestHeader (headerName, Cookie.setCookieValue csrfCookie)
-        Nothing -> failure $ T.concat
-          [ "addTokenFromCookieNamedToHeaderNamed failed to lookup CSRF cookie with name: "
-          , T.pack $ show cookieName
-          , ". Cookies were: "
-          , T.pack $ show cookies
-          ]
+    Just csrfCookie -> addRequestHeader (headerName, Cookie.setCookieValue csrfCookie)
+    Nothing -> failure $ T.concat
+      [ "addTokenFromCookieNamedToHeaderNamed failed to lookup CSRF cookie with name: "
+      , T.pack $ show cookieName
+      , ". Cookies were: "
+      , T.pack $ show cookies
+      ]
 
 -- | Returns the 'Cookies' from the most recent request. If a request hasn't been made, an error is raised.
 --
@@ -683,9 +679,8 @@ getRequestCookies :: RequestBuilder site Cookies
 getRequestCookies = do
   requestBuilderData <- ST.get
   headers <- case simpleHeaders <$> rbdResponse requestBuilderData of
-                  Just h -> return h
-                  Nothing -> failure "getRequestCookies: No request has been made yet; the cookies can't be looked up."
-
+               Just h -> return h
+               Nothing -> failure "getRequestCookies: No request has been made yet; the cookies can't be looked up."
   return $ M.fromList $ map (\c -> (Cookie.setCookieName c, c)) (parseSetCookies headers)
 
 
@@ -729,8 +724,8 @@ get :: (Yesod site, RedirectUrl site url)
     => url
     -> YesodExample site ()
 get url = request $ do
-    setMethod "GET"
-    setUrl url
+  setMethod "GET"
+  setUrl url
 
 -- | Follow a redirect, if the last response was a redirect.
 -- (We consider a request a redirect if the status is
@@ -745,15 +740,14 @@ followRedirect :: Yesod site
 followRedirect = do
   mr <- getResponse
   case mr of
-   Nothing ->  return $ Left "followRedirect called, but there was no previous response, so no redirect to follow"
-   Just r -> do
-     if not ((H.statusCode $ simpleStatus r) `elem` [301, 302, 303, 307, 308])
-       then return $ Left "followRedirect called, but previous request was not a redirect"
-       else do
-         case lookup "Location" (simpleHeaders r) of
-          Nothing -> return $ Left "followRedirect called, but no location header set"
-          Just h -> let url = TE.decodeUtf8 h in
-                     get url  >> return (Right url)
+    Nothing ->  return $ Left "followRedirect called, but there was no previous response, so no redirect to follow"
+    Just r -> do
+      if not ((H.statusCode $ simpleStatus r) `elem` [301, 302, 303, 307, 308])
+        then return $ Left "followRedirect called, but previous request was not a redirect"
+        else case lookup "Location" (simpleHeaders r) of
+               Nothing -> return $ Left "followRedirect called, but no location header set"
+               Just h -> let url = TE.decodeUtf8 h in
+                 get url  >> return (Right url)
 
 -- | Parse the Location header of the last response.
 --
@@ -805,22 +799,22 @@ setUrl :: (Yesod site, RedirectUrl site url)
        => url
        -> RequestBuilder site ()
 setUrl url' = do
-    site <- fmap rbdSite ST.get
-    eurl <- runFakeHandler
-        M.empty
-        (const $ error "Yesod.Test: No logger available")
-        site
-        (toTextUrl url')
-    url <- either (error . show) return eurl
-    let (urlPath, urlQuery) = T.break (== '?') url
-    ST.modify $ \rbd -> rbd
-        { rbdPath =
-            case DL.filter (/="") $ H.decodePathSegments $ TE.encodeUtf8 urlPath of
-                ("http:":_:rest) -> rest
-                ("https:":_:rest) -> rest
-                x -> x
-        , rbdGets = rbdGets rbd ++ H.parseQuery (TE.encodeUtf8 urlQuery)
-        }
+  site <- fmap rbdSite ST.get
+  eurl <- runFakeHandler
+    M.empty
+    (const $ error "Yesod.Test: No logger available")
+    site
+    (toTextUrl url')
+  url <- either (error . show) return eurl
+  let (urlPath, urlQuery) = T.break (== '?') url
+  ST.modify $ \rbd -> rbd
+    { rbdPath =
+        case DL.filter (/="") $ H.decodePathSegments $ TE.encodeUtf8 urlPath of
+          ("http:":_:rest) -> rest
+          ("https:":_:rest) -> rest
+          x -> x
+    , rbdGets = rbdGets rbd ++ H.parseQuery (TE.encodeUtf8 urlQuery)
+    }
 
 -- | Simple way to set HTTP request body
 --
@@ -846,8 +840,8 @@ setRequestBody body = ST.modify $ \rbd -> rbd { rbdPostData = BinaryPostData bod
 -- >   addRequestHeader (hUserAgent, "Chrome/41.0.2228.0")
 addRequestHeader :: H.Header -> RequestBuilder site ()
 addRequestHeader header = ST.modify $ \rbd -> rbd
-    { rbdHeaders = header : rbdHeaders rbd
-    }
+  { rbdHeaders = header : rbdHeaders rbd
+  }
 
 -- | The general interface for performing requests. 'request' takes a 'RequestBuilder',
 -- constructs a request, and executes it.
@@ -866,56 +860,56 @@ request :: Yesod site
         => RequestBuilder site ()
         -> YesodExample site ()
 request reqBuilder = do
-    YesodExampleData app site oldCookies mRes <- ST.get
+  YesodExampleData app site oldCookies mRes <- ST.get
 
-    RequestBuilderData {..} <- liftIO $ ST.execStateT reqBuilder RequestBuilderData
-      { rbdPostData = MultipleItemsPostData []
-      , rbdResponse = mRes
-      , rbdMethod = "GET"
-      , rbdSite = site
-      , rbdPath = []
-      , rbdGets = []
-      , rbdHeaders = []
-      }
-    let path
-            | null rbdPath = "/"
-            | otherwise = TE.decodeUtf8 $ Builder.toByteString $ H.encodePathSegments rbdPath
+  RequestBuilderData {..} <- liftIO $ ST.execStateT reqBuilder RequestBuilderData
+    { rbdPostData = MultipleItemsPostData []
+    , rbdResponse = mRes
+    , rbdMethod = "GET"
+    , rbdSite = site
+    , rbdPath = []
+    , rbdGets = []
+    , rbdHeaders = []
+    }
+  let path
+        | null rbdPath = "/"
+        | otherwise = TE.decodeUtf8 $ Builder.toByteString $ H.encodePathSegments rbdPath
 
-    -- expire cookies and filter them for the current path. TODO: support max age
-    currentUtc <- liftIO getCurrentTime
-    let cookies = M.filter (checkCookieTime currentUtc) oldCookies
-        cookiesForPath = M.filter (checkCookiePath path) cookies
+  -- expire cookies and filter them for the current path. TODO: support max age
+  currentUtc <- liftIO getCurrentTime
+  let cookies = M.filter (checkCookieTime currentUtc) oldCookies
+      cookiesForPath = M.filter (checkCookiePath path) cookies
 
-    let req = case rbdPostData of
-          MultipleItemsPostData x ->
-            if DL.any isFile x
-            then (multipart x)
-            else singlepart
-          BinaryPostData _ -> singlepart
-          where singlepart = makeSinglepart cookiesForPath rbdPostData rbdMethod rbdHeaders path rbdGets
-                multipart x = makeMultipart cookiesForPath x rbdMethod rbdHeaders path rbdGets
-    -- let maker = case rbdPostData of
-    --       MultipleItemsPostData x ->
-    --         if DL.any isFile x
-    --         then makeMultipart
-    --         else makeSinglepart
-    --       BinaryPostData _ -> makeSinglepart
-    -- let req = maker cookiesForPath rbdPostData rbdMethod rbdHeaders path rbdGets
-    response <- liftIO $ runSession (srequest req
-        { simpleRequest = (simpleRequest req)
-            { httpVersion = H.http11
-            }
-        }) app
-    let newCookies = parseSetCookies $ simpleHeaders response
-        cookies' = M.fromList [(Cookie.setCookieName c, c) | c <- newCookies] `M.union` cookies
-    ST.put $ YesodExampleData app site cookies' (Just response)
+  let req = case rbdPostData of
+              MultipleItemsPostData x ->
+                if DL.any isFile x
+                then (multipart x)
+                else singlepart
+              BinaryPostData _ -> singlepart
+        where singlepart = makeSinglepart cookiesForPath rbdPostData rbdMethod rbdHeaders path rbdGets
+              multipart x = makeMultipart cookiesForPath x rbdMethod rbdHeaders path rbdGets
+  -- let maker = case rbdPostData of
+  --       MultipleItemsPostData x ->
+  --         if DL.any isFile x
+  --         then makeMultipart
+  --         else makeSinglepart
+  --       BinaryPostData _ -> makeSinglepart
+  -- let req = maker cookiesForPath rbdPostData rbdMethod rbdHeaders path rbdGets
+  response <- liftIO $ runSession (srequest req
+                                   { simpleRequest = (simpleRequest req)
+                                     { httpVersion = H.http11
+                                     }
+                                   }) app
+  let newCookies = parseSetCookies $ simpleHeaders response
+      cookies' = M.fromList [(Cookie.setCookieName c, c) | c <- newCookies] `M.union` cookies
+  ST.put $ YesodExampleData app site cookies' (Just response)
   where
     isFile (ReqFilePart _ _ _ _) = True
     isFile _ = False
 
     checkCookieTime t c = case Cookie.setCookieExpires c of
-                              Nothing -> True
-                              Just t' -> t < t'
+                            Nothing -> True
+                            Just t' -> t < t'
     checkCookiePath url c =
       case Cookie.setCookiePath c of
         Nothing -> True
@@ -1013,18 +1007,18 @@ testApp site middleware = (site, middleware)
 type YSpec site = Hspec.SpecWith (TestApp site)
 
 instance YesodDispatch site => Hspec.Example (ST.StateT (YesodExampleData site) IO a) where
-    type Arg (ST.StateT (YesodExampleData site) IO a) = TestApp site
+  type Arg (ST.StateT (YesodExampleData site) IO a) = TestApp site
 
-    evaluateExample example params action =
-        Hspec.evaluateExample
-            (action $ \(site, middleware) -> do
-                app <- toWaiAppPlain site
-                _ <- ST.evalStateT example YesodExampleData
-                    { yedApp = middleware app
-                    , yedSite = site
-                    , yedCookies = M.empty
-                    , yedResponse = Nothing
-                    }
-                return ())
-            params
-            ($ ())
+  evaluateExample example params action =
+    Hspec.evaluateExample
+    (action $ \(site, middleware) -> do
+        app <- toWaiAppPlain site
+        _ <- ST.evalStateT example YesodExampleData
+          { yedApp = middleware app
+          , yedSite = site
+          , yedCookies = M.empty
+          , yedResponse = Nothing
+          }
+        return ())
+    params
+    ($ ())
