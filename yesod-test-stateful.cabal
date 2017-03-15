@@ -33,7 +33,7 @@ library
                       , case-insensitive          >= 0.2
                       , containers
                       , cookie
-                      , hspec-core                == 2.2.*
+                      , hspec-core                >= 2.2
                       , html-conduit              >= 0.1
                       , http-types                >= 0.7
                       , HUnit                     >= 1.2
