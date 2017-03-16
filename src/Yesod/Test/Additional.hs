@@ -136,6 +136,7 @@ import Control.Monad.IO.Class
 import System.IO
 import Yesod.Test.TransversingCSS
 import Yesod.Core
+import qualified Yesod.Core.Unsafe
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Encoding (encodeUtf8, decodeUtf8)
 import Text.XML.Cursor hiding (element)
@@ -821,7 +822,7 @@ setUrl :: (Yesod site, RedirectUrl site url)
        -> RequestBuilder site ()
 setUrl url' = do
   site <- fmap rbdSite ST.get
-  eurl <- runFakeHandler
+  eurl <- Yesod.Core.Unsafe.runFakeHandler
     M.empty
     (const $ error "Yesod.Test: No logger available")
     site
