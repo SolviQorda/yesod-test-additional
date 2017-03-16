@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Yesod.Test.StatefulSpec (spec) where
+module Yesod.Test.AdditionalSpec (spec) where
 
 import Test.HUnit hiding (Test)
 import Test.Hspec

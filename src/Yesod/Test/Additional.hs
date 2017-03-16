@@ -26,7 +26,7 @@ backend pre-conditions, or to assert that your session is having the desired eff
 
 -}
 
-module Yesod.Test.Stateful
+module Yesod.Test.Additional
     ( -- * Declaring and running your test suite
       yesodSpec
     , YesodSpec

@@ -1,7 +1,7 @@
-name:                   yesod-test-stateful
+name:                   yesod-test-additional
 version:                0.1.0.0
 synopsis:               Integration testing for Yesod apps that need test state.
-homepage:               https://github.com/whittle/yesod-test-stateful#readme
+homepage:               https://github.com/whittle/yesod-test-additional#readme
 license:                MIT
 license-file:           LICENSE.md
 author:                 Jason Whittle
@@ -11,10 +11,10 @@ category:               Web, Yesod, Testing
 build-type:             Simple
 cabal-version:          >= 1.10
 stability:              experimental
-bug-reports:            https://github.com/whittle/yesod-test-stateful/issues
+bug-reports:            https://github.com/whittle/yesod-test-additional/issues
 description:
   .
-  `yesod-test-stateful` is a fork of `yesod-test` that adds the
+  `yesod-test-additional` is a fork of `yesod-test` that adds the
   ability to thread some additional state through test cases. This is
   especially helpful in creating mocks for network access and other IO
   actions in the Yesod app under test.
@@ -48,14 +48,14 @@ library
                       , yesod-core                >= 1.4.14
                       , yesod-test                >= 0.2
   hs-source-dirs:       src
-  exposed-modules:      Yesod.Test.Stateful
+  exposed-modules:      Yesod.Test.Additional
 
 test-suite test
   type:                 exitcode-stdio-1.0
   default-language:     Haskell2010
   ghc-options:          -Wall -rtsopts -threaded -with-rtsopts=-N
   build-depends:        base
-                      , yesod-test-stateful
+                      , yesod-test-additional
                       , bytestring
                       , containers
                       , hspec
@@ -73,8 +73,8 @@ test-suite test
                       , yesod-test
   hs-source-dirs:       test
   main-is:              Spec.hs
-  other-modules:        Yesod.Test.StatefulSpec
+  other-modules:        Yesod.Test.AdditionalSpec
 
 source-repository head
   type: git
-  location: https://github.com/whittle/yesod-test-stateful
+  location: https://github.com/whittle/yesod-test-additional

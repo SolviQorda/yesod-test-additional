@@ -1,4 +1,4 @@
-# [yesod-test-stateful][]
+# [yesod-test-additional][]
 
 Thanks for starting a project with Haskeleton! If you haven't heard of it
 before, I suggest reading the introductory blog post. You can find it here:
