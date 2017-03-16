@@ -192,13 +192,13 @@ getTestYesod = fmap yedSite ST.get
 
 -- | Get the additional test state for the current test.
 --
--- @since 0.1.0
+-- @since 1.5.5
 getAdditional :: YesodExample site addl addl
 getAdditional = yedAdditional <$> ST.get
 
 -- | Modify the additional test state for the current test.
 --
--- @since 0.1.0
+-- @since 1.5.5
 modifyAdditional :: (addl -> addl) -> YesodExample site addl ()
 modifyAdditional f = ST.modify $ \y -> y { yedAdditional = f $ yedAdditional y }
 

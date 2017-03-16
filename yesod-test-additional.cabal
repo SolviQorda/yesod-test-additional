@@ -1,5 +1,5 @@
 name:                   yesod-test-additional
-version:                0.1.0.0
+version:                1.5.5
 synopsis:               Integration testing for Yesod apps that need test state.
 homepage:               https://github.com/whittle/yesod-test-additional#readme
 license:                MIT
@@ -18,6 +18,8 @@ description:
   ability to thread some additional state through test cases. This is
   especially helpful in creating mocks for network access and other IO
   actions in the Yesod app under test.
+  .
+  Versioning tracks yesod-test.
 
 extra-source-files:     CHANGELOG.md
                       , LICENSE.md
