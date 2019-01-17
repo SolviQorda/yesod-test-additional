@@ -559,8 +559,6 @@ nameFromLabel label = do
         name:_ -> return name
     _ -> failure $ "More than one label contained " <> label
 
-(<>) :: T.Text -> T.Text -> T.Text
-(<>) = T.append
 
 -- How does this work for the alternate <label><input></label> syntax?
 
